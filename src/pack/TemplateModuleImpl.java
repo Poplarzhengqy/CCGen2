@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Collections;
-import org.apache.lucene.index.Term;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.DocumentException;
@@ -92,13 +91,11 @@ import org.kablink.teaming.security.function.WorkAreaFunctionMembership;
 import org.kablink.teaming.security.function.WorkAreaOperation;
 import org.kablink.teaming.util.NLT;
 import org.kablink.teaming.util.SZoneConfig;
-import org.kablink.teaming.util.StatusTicket;
 import org.kablink.teaming.util.Utils;
 import org.kablink.teaming.web.util.DashboardHelper;
-import org.kablink.teaming.web.util.DefinitionHelper;
 import org.kablink.util.GetterUtil;
 import org.kablink.util.Validator;
-import org.kablink.util.search.Constants;
+
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -801,34 +798,40 @@ public class TemplateModuleImpl extends CommonDependencyInjection implements
 			//now that we have registered the sortKey in the parent binder, we use a longer transaction to complete 
 			//it - there shouldn't be any contention here since the binder is new and doesn't need to reference its parent
 			getTransactionTemplate().execute(new TransactionCallback() {
-		        	public Object doInTransaction(TransactionStatus status) {
-		        //need to reload in case addFolder/workspace used retry loop where session cache is flushed by exception
-		        TemplateBinder cfg = getCoreDao().loadTemplate(configId, RequestContextHolder.getRequestContext().getZoneId());
-	 			addBinderFinish(cfg, top);
-	 			//after children are added, resolve relative selections
-	 			List<Binder>binders = new ArrayList();
-	 			binders.add(top);
-	 			while (!binders.isEmpty()) {
-	 				Binder b = binders.remove(0);
-	 				binders.addAll(b.getBinders());
-	 				try {
-	 					EntityDashboard dashboard = getCoreDao().loadEntityDashboard(b.getEntityIdentifier());
-	 					if (dashboard != null) {
-	 						DashboardHelper.resolveRelativeBinders(b.getBinders(), dashboard);
-	 					}
-	 				} catch (Exception ex) {
-	 					//at this point just log errors  index has already been updated
-	 					//	if throw errors, rollback will take effect and must manualy remove from index
-	 					logger.error("Error adding dashboard " + ex.getLocalizedMessage());
-	 				}
-	 			}
-	 			return null;
-		     }});
+				public Object doInTransaction(TransactionStatus status) {
+			        //need to reload in case addFolder/workspace used retry loop where session cache is flushed by exception
+			        TemplateBinder cfg = getCoreDao().loadTemplate(configId, RequestContextHolder.getRequestContext().getZoneId());
+					addBinderPart2(cfg, top);
+					return null;
+				}
+			});
 		}
 		IndexSynchronizationManager.applyChanges(); //get them committed, binders are
 		return top;
 
 	}
+	
+	private void addBinderPart2(TemplateBinder cfg, Binder top) {
+		addBinderFinish(cfg, top);
+		//after children are added, resolve relative selections
+		List<Binder>binders = new ArrayList();
+		binders.add(top);
+		while (!binders.isEmpty()) {
+			Binder b = binders.remove(0);
+			binders.addAll(b.getBinders());
+			try {
+				EntityDashboard dashboard = getCoreDao().loadEntityDashboard(b.getEntityIdentifier());
+				if (dashboard != null) {
+					DashboardHelper.resolveRelativeBinders(b.getBinders(), dashboard);
+				}
+			} catch (Exception ex) {
+				//at this point just log errors  index has already been updated
+				//	if throw errors, rollback will take effect and must manualy remove from index
+				logger.error("Error adding dashboard " + ex.getLocalizedMessage());
+			}
+		}
+	}
+
 	protected void addBinderFinish(TemplateBinder cfg, Binder binder) throws AccessControlException {
 		   Map props = cfg.getProperties();
 		   if (props != null) binder.setProperties(props);
@@ -950,15 +953,47 @@ public class TemplateModuleImpl extends CommonDependencyInjection implements
    	}
    	
 	@Override
-	public List<Binder> _addNetFolderBindersInSync(Long templateId,
-			Long parentBinderId, List<String> titleList, List<String> nameList,
-			List<Map> overrideInputDataList, List<Map> optionsList)
+	public List<Binder> _addNetFolderBindersInSync(final Long templateId,
+			final Long parentBinderId, final List<String> titleList, final List<String> nameList,
+			final List<Map> overrideInputDataList, final List<Map> optionsList)
 			throws AccessControlException, WriteFilesException {
-		// $$$$$$$$$$$$ TODO
-		ArrayList<Binder> result = new ArrayList<Binder>(titleList.size());
+		
+		final ArrayList<Binder> result = new ArrayList<Binder>(titleList.size());
+		
+		//The first add is independent of the others.  In this case the transaction is short 
+		//and managed by processors.  
+		
+		TemplateBinder cfg = getCoreDao().loadTemplate(templateId, RequestContextHolder.getRequestContext().getZoneId());
+		Binder parent = getCoreDao().loadBinder(parentBinderId, RequestContextHolder.getRequestContext().getZoneId());
+		
+		Map ctx;
+		Binder top;
 		for(int i = 0; i < titleList.size(); i++) {
-			result.set(i, this.addBinder(templateId, parentBinderId, titleList.get(i), nameList.get(i), overrideInputDataList.get(i), optionsList.get(i)));
+			ctx = optionsList.get(i);
+			if(ctx == null)
+				ctx = new HashMap();
+			//force a lock so contention on the sortKey is reduced
+			ctx.put(ObjectKeys.INPUT_OPTION_FORCE_LOCK, Boolean.TRUE);
+			top = addBinderInternal(cfg, parent, titleList.get(i), nameList.get(i), overrideInputDataList.get(i), ctx);
+			if(top != null)
+				result.set(i, top);
 		}
+		
+		//now that we have registered the sortKey in the parent binder, we use a longer transaction to complete 
+		//it - there shouldn't be any contention here since the binder is new and doesn't need to reference its parent
+		getTransactionTemplate().execute(new TransactionCallback() {
+			public Object doInTransaction(TransactionStatus status) {
+		        //need to reload in case addFolder/workspace used retry loop where session cache is flushed by exception
+		        TemplateBinder cfg = getCoreDao().loadTemplate(templateId, RequestContextHolder.getRequestContext().getZoneId());
+				for(Binder top : result) {
+					if(top != null)
+						addBinderPart2(cfg, top);
+				}
+				return null;
+			}
+		});
+		
 		return result;
 	}
+	
 }

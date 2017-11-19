@@ -294,7 +294,7 @@ public abstract class AbstractEntryProcessor extends AbstractBinderProcessor
 	public List<FolderEntry> _addNetFolderEntriesInSync(final Folder folder, final Definition def, 
 			final List<InputDataAccessor> inputDataList, final List<Map> fileItemsList, final List<Map> optionsList) 
     	throws WriteFilesException, WriteEntryDataException, WriteEntryDataException {
-		final ArrayList<FolderEntry> entries = new ArrayList<FolderEntry>(inputDataList.size());
+		final ArrayList<FolderEntry> result = new ArrayList<FolderEntry>(inputDataList.size());
 				
 		// Start a transaction
     	getTransactionTemplate().execute(new TransactionCallback() {
@@ -388,7 +388,7 @@ public abstract class AbstractEntryProcessor extends AbstractBinderProcessor
 	    	        // Index the file
 	    			IndexSynchronizationManager.addDocument(buildIndexDocumentFromEntryFile(folder, entry, fAtt, fui, Collections.EMPTY_LIST));
 
-    		    	entries.set(i, entry);
+	    			result.set(i, entry);
     			}    			
    			return null;
     		}
@@ -397,7 +397,7 @@ public abstract class AbstractEntryProcessor extends AbstractBinderProcessor
     	
     	// Do this outside of database transaction
     	
-		return entries;
+		return result;
 	}
 
     
