@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2002-2012   The FreeCol Team
+ *  Copyright (C) 2002-2011  The FreeCol Team
  *
  *  This file is part of FreeCol.
  *
@@ -136,7 +136,7 @@ public class IndianBringGiftMission extends Mission {
                 // Load the goods:
                 List<Goods> goodsList = new ArrayList<Goods>();
                 GoodsContainer gc = is.getGoodsContainer();
-                for (GoodsType goodsType : getSpecification().getNewWorldGoodsTypeList()) {
+                for (GoodsType goodsType : getAIMain().getGame().getSpecification().getNewWorldGoodsTypeList()) {
                     if (gc.getGoodsCount(goodsType) >= IndianSettlement.KEEP_RAW_MATERIAL + 25) {
                         Goods goods = new Goods(getGame(), is, goodsType,
                             Utils.randomInt(logger, "Gift amount",
@@ -174,7 +174,7 @@ public class IndianBringGiftMission extends Mission {
         }
 
         // Walk in a random direction if we have any moves left:
-        moveRandomly();
+        moveRandomly(connection);
     }
 
     /**

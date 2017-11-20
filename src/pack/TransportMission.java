@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2002-2012   The FreeCol Team
+ *  Copyright (C) 2002-2011  The FreeCol Team
  *
  *  This file is part of FreeCol.
  *
@@ -746,7 +746,7 @@ public class TransportMission extends Mission {
         }
 
         // Try nearest colony
-        if ((path = findNearestOtherSettlement(unit)) != null) {
+        if ((path = findNearestColony(unit)) != null) {
             return new Destination(false, path);
         }
 
@@ -1023,7 +1023,7 @@ public class TransportMission extends Mission {
 
         int priceTrained = 0;
         UnitType cheapestTrained = null;
-        List<UnitType> unitTypes = getSpecification().getUnitTypesTrainedInEurope();
+        List<UnitType> unitTypes = getAIMain().getGame().getSpecification().getUnitTypesTrainedInEurope();
         for (UnitType unitType : unitTypes) {
             int price = europe.getUnitPrice(unitType);
             if (cheapestTrained == null || price < priceTrained) {
