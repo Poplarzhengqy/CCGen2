@@ -107,6 +107,8 @@ public class LoginDlg extends DlgBox
 	private FlowPanel m_mainPanel = null;
 	private FormPanel m_formPanel = null;
 	private FlowPanel m_hiddenInputPanel = null;
+	private FlowPanel m_headerPanel = null;
+	private String m_caption = null;
 	private Element m_userIdLabelElement = null;
 	private TextBox m_userIdTxtBox = null;
 	private Element m_pwdLabelElement = null;
@@ -375,7 +377,7 @@ public class LoginDlg extends DlgBox
 	/**
 	 * 
 	 */
-	private void createHeaderNow( String caption, FlowPanel panel )
+	private void createHeaderNow()
 	{
 		MastHead mastHead;
 		boolean useDefaultImg = true;
@@ -447,7 +449,7 @@ public class LoginDlg extends DlgBox
 
 			// Yes
 			img = new Image( imgUrl );
-			panel.add( img );
+			m_headerPanel.add( img );
 		}
 	}
 	
@@ -455,26 +457,12 @@ public class LoginDlg extends DlgBox
 	 * Override the createHeader() method because we need to make it nicer.
 	 */
 	@Override
-	public Panel createHeader( final String caption )
+	public Panel createHeader( String caption )
 	{
-		Timer timer;
-		final FlowPanel panel;
+		m_caption = caption;
+		m_headerPanel = new FlowPanel();
 		
-		panel = new FlowPanel();
-		
-		// We need to wait until the masthead has read the branding data
-		timer = new Timer()
-		{
-			@Override
-			public void run()
-			{
-				createHeaderNow( caption, panel );
-			}
-		};
-		
-		timer.schedule( 250 );
-
-		return panel;
+		return m_headerPanel;
 	}// end createHeader()
 	
 	/**
@@ -971,61 +959,56 @@ public class LoginDlg extends DlgBox
 	{
 		debugAlert( "In LoginDlg.showDlg()" );
 		
-		if ( m_initialized )
-		{
-			setPopupPositionAndShow( new PopupPanel.PositionCallback()
-			{
-				@Override
-				public void setPosition(int offsetWidth, int offsetHeight)
-				{
-					int x = ( ( Window.getClientWidth()  - offsetWidth  ) / 2 );
-					int y = ( ( Window.getClientHeight() - offsetHeight ) / 3 );
-					
-					setPopupPosition( x, y );
-				}
-			} );
-
-			return;
-		}
-		
 		m_loginStatus = loginStatus;
 
-		switch ( loginStatus )
+		if ( m_initialized == false )
 		{
-		case AuthenticationFailed:
-			showRegularLoginUI();
-		    showLoginFailedMsg();
-		    break;
-			
-		case RegistrationRequired:
-			showExternalUserRegistrationUI();
-			break;
-			
-		case PromptForLogin:
-			showRegularLoginUI();
-			hideLoginFailedMsg();
-			break;
+			switch ( loginStatus )
+			{
+			case AuthenticationFailed:
+				showRegularLoginUI();
+			    showLoginFailedMsg();
+			    break;
+				
+			case RegistrationRequired:
+				showExternalUserRegistrationUI();
+				break;
+				
+			case PromptForLogin:
+				showRegularLoginUI();
+				hideLoginFailedMsg();
+				break;
+			}
 		}
 
 		setAllowCancel( allowCancel );
-
-		setPopupPositionAndShow( new PopupPanel.PositionCallback()
-		{
-			@Override
-			public void setPosition(int offsetWidth, int offsetHeight)
-			{
-				int x = ( ( Window.getClientWidth()  - offsetWidth  ) / 2 );
-				int y = ( ( Window.getClientHeight() - offsetHeight ) / 3 );
-				
-				setPopupPosition( x, y );
-			}
-		} );
 
 		// Issue an ajax request to get self registration info and a list of open id providers
 		if ( loginStatus != LoginStatus.RegistrationRequired )
 			getLoginInfoFromServer();
 		
-		m_initialized = true;
+		// We need to wait until the masthead has read the branding data
+		if ( m_initialized == false )
+		{
+			Timer timer;
+			
+			timer = new Timer()
+			{
+				@Override
+				public void run()
+				{
+					m_initialized = true;
+					createHeaderNow();
+					center();
+				}
+			};
+			
+			timer.schedule( 250 );
+		}
+		else
+		{
+			show();
+		}
 	}
 	
 	/**

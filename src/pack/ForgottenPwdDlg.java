@@ -47,6 +47,9 @@ import org.kablink.teaming.gwt.client.widgets.DlgBox;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.RunAsyncCallback;
 import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.KeyPressEvent;
+import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.FlexTable;
@@ -128,6 +131,33 @@ public class ForgottenPwdDlg extends DlgBox
 
 		m_emailAddressTxtBox = new TextBox();
 		m_emailAddressTxtBox.setVisibleLength( 30 );
+		m_emailAddressTxtBox.addKeyPressHandler( new KeyPressHandler()
+		{
+			@Override
+			public void onKeyPress( KeyPressEvent event )
+			{
+		        int keyCode;
+		    	
+		        // Get the key the user pressed
+		        keyCode = event.getNativeEvent().getKeyCode();
+		        
+		        // Did the user press the enter key?
+		        if ( keyCode == KeyCodes.KEY_ENTER )
+		        {
+		        	Scheduler.ScheduledCommand cmd;
+		        	
+		        	cmd = new Scheduler.ScheduledCommand()
+		        	{
+						@Override
+						public void execute()
+						{
+							editSuccessful( null );
+						}
+					};
+					Scheduler.get().scheduleDeferred( cmd );
+		        }
+			}
+		} );
 		table.setWidget( row, 1, m_emailAddressTxtBox );
 
 		mainPanel.add( table );
@@ -203,8 +233,24 @@ public class ForgottenPwdDlg extends DlgBox
 							}
 							else
 							{
+								FlowPanel errorPanel;
+								Label label;
+
 								// No, tell the user about it.
-								Window.alert( GwtTeaming.getMessages().forgottenPwdDlg_InvalidEmailAddress() );
+								// Get the panel that holds the errors.
+								errorPanel = getErrorPanel();
+								errorPanel.clear();
+
+								label = new Label( GwtTeaming.getMessages().shareErrors() );
+								label.addStyleName( "dlgErrorLabel" );
+								errorPanel.add( label );
+								
+								label = new Label( GwtTeaming.getMessages().forgottenPwdDlg_InvalidEmailAddress() );
+								label.addStyleName( "bulletListItem" );
+								errorPanel.add( label );
+
+								// Make the error panel visible.
+								showErrorPanel();
 								m_emailAddressTxtBox.setFocus( true );
 							}
 						}
