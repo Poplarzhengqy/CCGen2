@@ -388,7 +388,7 @@ public abstract class AbstractEntryProcessor extends AbstractBinderProcessor
 	    	        // Index the file
 	    			IndexSynchronizationManager.addDocument(buildIndexDocumentFromEntryFile(folder, entry, fAtt, fui, Collections.EMPTY_LIST));
 
-	    			result.set(i, entry);
+	    			result.add(entry); // entry may be null
     			}    			
    			return null;
     		}

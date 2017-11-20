@@ -975,8 +975,7 @@ public class TemplateModuleImpl extends CommonDependencyInjection implements
 			//force a lock so contention on the sortKey is reduced
 			ctx.put(ObjectKeys.INPUT_OPTION_FORCE_LOCK, Boolean.TRUE);
 			top = addBinderInternal(cfg, parent, titleList.get(i), nameList.get(i), overrideInputDataList.get(i), ctx);
-			if(top != null)
-				result.set(i, top);
+			result.add(top); // top may be null
 		}
 		
 		//now that we have registered the sortKey in the parent binder, we use a longer transaction to complete 
