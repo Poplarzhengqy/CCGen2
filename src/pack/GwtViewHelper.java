@@ -77,7 +77,6 @@ import org.kablink.teaming.BinderQuotaException;
 import org.kablink.teaming.DataQuotaException;
 import org.kablink.teaming.FileSizeLimitException;
 import org.kablink.teaming.IllegalCharacterInNameException;
-import org.kablink.teaming.NotSupportedException;
 import org.kablink.teaming.ObjectKeys;
 import org.kablink.teaming.comparator.StringComparator;
 import org.kablink.teaming.context.request.RequestContextHolder;
@@ -1311,33 +1310,25 @@ public class GwtViewHelper {
 				for (EntityId entityId:  entityIds) {
 					try {
 						// Can we copy this entity?
-						if (entityId.isBinder())
-						     bm.copyBinder(                        entityId.getEntityId(), tis.getBinderTargetId(), true, null);
-						else fm.copyEntry( entityId.getBinderId(), entityId.getEntityId(), tis.getEntryTargetId(),  null, null);
+						if (entityId.isBinder()) {
+							bm.copyBinder(entityId.getEntityId(), tis.getBinderTargetId(), true, null);
+						}
+						else {
+							FolderEntry copiedFE = fm.copyEntry( entityId.getBinderId(), entityId.getEntityId(), tis.getEntryTargetId(),  null, null);
+							if (null == copiedFE) {
+								throw new TitleException("");
+							}
+						}
 					}
 
 					catch (Exception e) {
 						// No!  Add an error  to the error list.
 						String entryTitle = GwtServerHelper.getEntityTitle(bs, entityId);
 						String messageKey;
-						NotSupportedException nse = null;
-						if      (e instanceof AccessControlException)  messageKey = "copyEntryError.AccssControlException";
-						else if (e instanceof NotSupportedException)  {messageKey = "copyEntryError.NotSupportedException"; nse = ((NotSupportedException) e);}
-						else if (e instanceof TitleException)          messageKey = "copyEntryError.TitleException";
-						else                                           messageKey = "copyEntryError.OtherException";
-						String[] messageArgs;
-						if (null == nse) {
-							messageArgs = new String[]{entryTitle};
-						}
-						else {
-							String messagePatch;
-							String messageCode = nse.getErrorCode();
-							if      (messageCode.equals("errorcode.notsupported.copyEntry.mirroredSource"))      messagePatch = NLT.get("copyEntryError.notsupported.Net.to.adHoc");
-							else if (messageCode.equals("errorcode.notsupported.copyEntry.mirroredDestination")) messagePatch = NLT.get("copyEntryError.notsupported.adHoc.to.Net");
-							else                                                                                 messagePatch = nse.getLocalizedMessage(); 
-							messageArgs = new String[]{entryTitle, messagePatch};
-						}
-						reply.addError(NLT.get(messageKey, messageArgs));
+						if      (e instanceof AccessControlException) messageKey = "copyEntryError.AccssControlException";
+						else if (e instanceof TitleException)         messageKey = "copyEntryError.TitleException";
+						else                                          messageKey = "copyEntryError.OtherException";
+						reply.addError(NLT.get(messageKey, new String[]{entryTitle}));
 					}
 				}
 			}
@@ -6446,24 +6437,10 @@ public class GwtViewHelper {
 						// No!  Add an error  to the error list.
 						String entryTitle = GwtServerHelper.getEntityTitle(bs, entityId);
 						String messageKey;
-						NotSupportedException nse = null;
-						if      (e instanceof AccessControlException)  messageKey = "moveEntryError.AccssControlException";
-						else if (e instanceof NotSupportedException)  {messageKey = "moveEntryError.NotSupportedException"; nse = ((NotSupportedException) e);}
-						else if (e instanceof TitleException)          messageKey = "moveEntryError.TitleException";
-						else                                           messageKey = "moveEntryError.OtherException";
-						String[] messageArgs;
-						if (null == nse) {
-							messageArgs = new String[]{entryTitle};
-						}
-						else {
-							String messagePatch;
-							String messageCode = nse.getErrorCode();
-							if      (messageCode.equals("errorcode.notsupported.moveEntry.mirroredSource"))      messagePatch = NLT.get("moveEntryError.notsupported.Net.to.adHoc");
-							else if (messageCode.equals("errorcode.notsupported.moveEntry.mirroredDestination")) messagePatch = NLT.get("moveEntryError.notsupported.adHoc.to.Net");
-							else                                                                                 messagePatch = nse.getLocalizedMessage(); 
-							messageArgs = new String[]{entryTitle, messagePatch};
-						}
-						reply.addError(NLT.get(messageKey, messageArgs));
+						if      (e instanceof AccessControlException) messageKey = "moveEntryError.AccssControlException";
+						else if (e instanceof TitleException)         messageKey = "moveEntryError.TitleException";
+						else                                          messageKey = "moveEntryError.OtherException";
+						reply.addError(NLT.get(messageKey, new String[]{entryTitle}));
 					}
 				}
 			}
