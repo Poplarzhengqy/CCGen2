@@ -185,6 +185,7 @@ public class MastHead extends Composite
 			
 			// Yes
 			// Create a link for the user to click on that will invoke "Users in the system" page
+			if ( GwtTeaming.m_requestInfo.getAllowShowPeople() )
 			{
 				FlowPanel panel;
 				FlowPanel imgPanel;

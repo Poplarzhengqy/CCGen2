@@ -1530,6 +1530,14 @@ public class GwtUIHelper {
 			if ( id != null )
 				model.put( "guestId", id.toString() );
 		}
+
+		// Add a flag that will allow the admin to not show the "show people" link in the mast head
+		{
+			Boolean allowShowPeople;
+		
+			allowShowPeople = SPropsUtil.getBoolean( "allow.show.people", true );
+			model.put( "allowShowPeople", allowShowPeople );
+		}
 	}
 	
 	/**

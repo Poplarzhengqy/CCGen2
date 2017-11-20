@@ -82,6 +82,14 @@ public class RequestInfo extends JavaScriptObject
 	}-*/;
 
 	/**
+	 * Return the flag that tells us if we should show the "show people" link in the mast head.
+	 */
+	public final native boolean getAllowShowPeople()
+	/*-{
+		return this.getBFromS( this.allowShowPeople );
+	}-*/;
+	
+	/**
 	 * Return the base Vibe URL.
 	 * 
 	 * @return
