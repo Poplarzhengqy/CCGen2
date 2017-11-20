@@ -32,6 +32,7 @@
  */
 package org.kablink.teaming.module.zone.impl;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.kablink.teaming.NoObjectByTheIdException;
 import org.kablink.teaming.ObjectKeys;
 import org.kablink.teaming.context.request.RequestContext;
@@ -92,6 +94,7 @@ import org.kablink.teaming.security.function.WorkAreaFunctionMembership;
 import org.kablink.teaming.security.function.WorkAreaOperation;
 import org.kablink.teaming.security.function.WorkAreaOperation.RightSet;
 import org.kablink.teaming.security.impl.AccessControlManagerImpl;
+import org.kablink.teaming.util.FileStore;
 import org.kablink.teaming.util.NLT;
 import org.kablink.teaming.util.ReflectHelper;
 import org.kablink.teaming.util.SPropsUtil;
@@ -950,7 +953,26 @@ public abstract class AbstractZoneModule extends CommonDependencyInjection imple
 		}
 		//Make sure resource driver map is initialized
 		getResourceDriverManager().resetResourceDriverList();
-
+		
+		//See if it is time to purge the View as HMTL cache folder
+		Long maxDirSize = SPropsUtil.getLongObject("max.html.cache.size", 0L);
+		if (maxDirSize > 0) {
+			//There is  limit for the html cache. Go check if it is exceeded
+			FileStore cacheFileStoreHtml = new FileStore(SPropsUtil.getString("cache.file.store.dir"), ObjectKeys.CONVERTER_DIR_HTML);
+			File cacheDir = new File(cacheFileStoreHtml.getRootPath() + File.separator + Utils.getZoneKey());
+			if (cacheDir != null && cacheDir.exists()) {
+				//Get the dir size
+				long dirSize = FileUtils.sizeOfDirectory(cacheDir);
+				if (dirSize > maxDirSize) {
+					String cacheDirPath = cacheDir.getAbsolutePath();
+					try {
+						FileUtils.deleteDirectory(cacheDir);
+					} catch(Exception e) {
+						logger.warn("Could not delete HTML cache directory ("+cacheDirPath+") - " + e.getMessage());
+					}
+				}
+			}
+		}
 	}
 
  	// Must be running inside a transaction set up by the caller
