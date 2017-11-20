@@ -77,6 +77,7 @@ import org.kablink.teaming.BinderQuotaException;
 import org.kablink.teaming.DataQuotaException;
 import org.kablink.teaming.FileSizeLimitException;
 import org.kablink.teaming.IllegalCharacterInNameException;
+import org.kablink.teaming.NotSupportedException;
 import org.kablink.teaming.ObjectKeys;
 import org.kablink.teaming.comparator.StringComparator;
 import org.kablink.teaming.context.request.RequestContextHolder;
@@ -1325,10 +1326,24 @@ public class GwtViewHelper {
 						// No!  Add an error  to the error list.
 						String entryTitle = GwtServerHelper.getEntityTitle(bs, entityId);
 						String messageKey;
-						if      (e instanceof AccessControlException) messageKey = "copyEntryError.AccssControlException";
-						else if (e instanceof TitleException)         messageKey = "copyEntryError.TitleException";
-						else                                          messageKey = "copyEntryError.OtherException";
-						reply.addError(NLT.get(messageKey, new String[]{entryTitle}));
+						NotSupportedException nse = null;
+						if      (e instanceof AccessControlException)  messageKey = "copyEntryError.AccssControlException";
+						else if (e instanceof NotSupportedException)  {messageKey = "copyEntryError.NotSupportedException"; nse = ((NotSupportedException) e);}
+						else if (e instanceof TitleException)          messageKey = "copyEntryError.TitleException";
+						else                                           messageKey = "copyEntryError.OtherException";
+						String[] messageArgs;
+						if (null == nse) {
+							messageArgs = new String[]{entryTitle};
+						}
+						else {
+							String messagePatch;
+							String messageCode = nse.getErrorCode();
+							if      (messageCode.equals("errorcode.notsupported.copyEntry.mirroredSource"))      messagePatch = NLT.get("copyEntryError.notsupported.Net.to.adHoc");
+							else if (messageCode.equals("errorcode.notsupported.copyEntry.mirroredDestination")) messagePatch = NLT.get("copyEntryError.notsupported.adHoc.to.Net");
+							else                                                                                 messagePatch = nse.getLocalizedMessage(); 
+							messageArgs = new String[]{entryTitle, messagePatch};
+						}
+						reply.addError(NLT.get(messageKey, messageArgs));
 					}
 				}
 			}
@@ -6437,10 +6452,24 @@ public class GwtViewHelper {
 						// No!  Add an error  to the error list.
 						String entryTitle = GwtServerHelper.getEntityTitle(bs, entityId);
 						String messageKey;
-						if      (e instanceof AccessControlException) messageKey = "moveEntryError.AccssControlException";
-						else if (e instanceof TitleException)         messageKey = "moveEntryError.TitleException";
-						else                                          messageKey = "moveEntryError.OtherException";
-						reply.addError(NLT.get(messageKey, new String[]{entryTitle}));
+						NotSupportedException nse = null;
+						if      (e instanceof AccessControlException)  messageKey = "moveEntryError.AccssControlException";
+						else if (e instanceof NotSupportedException)  {messageKey = "moveEntryError.NotSupportedException"; nse = ((NotSupportedException) e);}
+						else if (e instanceof TitleException)          messageKey = "moveEntryError.TitleException";
+						else                                           messageKey = "moveEntryError.OtherException";
+						String[] messageArgs;
+						if (null == nse) {
+							messageArgs = new String[]{entryTitle};
+						}
+						else {
+							String messagePatch;
+							String messageCode = nse.getErrorCode();
+							if      (messageCode.equals("errorcode.notsupported.moveEntry.mirroredSource"))      messagePatch = NLT.get("moveEntryError.notsupported.Net.to.adHoc");
+							else if (messageCode.equals("errorcode.notsupported.moveEntry.mirroredDestination")) messagePatch = NLT.get("moveEntryError.notsupported.adHoc.to.Net");
+							else                                                                                 messagePatch = nse.getLocalizedMessage(); 
+							messageArgs = new String[]{entryTitle, messagePatch};
+						}
+						reply.addError(NLT.get(messageKey, messageArgs));
 					}
 				}
 			}
