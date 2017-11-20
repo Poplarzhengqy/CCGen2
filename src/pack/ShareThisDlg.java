@@ -1849,27 +1849,32 @@ public class ShareThisDlg extends DlgBox
 
 								if ( shareItem != null )
 								{
-									final Long recipientId;
-									final Long entityId;
-									Scheduler.ScheduledCommand cmd;
-									
-									recipientId = shareItem.getRecipientId();
-									entityId = shareItem.getEntityId().getEntityId();
-									cmd = new Scheduler.ScheduledCommand()
+									// We only want to invoke the "edit share rights" dialog if
+									// we are dealing with 1 entity
+									if ( m_entityIds != null && m_entityIds.size() == 1 )
 									{
-										@Override
-										public void execute()
+										final Long recipientId;
+										final Long entityId;
+										Scheduler.ScheduledCommand cmd;
+										
+										recipientId = shareItem.getRecipientId();
+										entityId = shareItem.getEntityId().getEntityId();
+										cmd = new Scheduler.ScheduledCommand()
 										{
-											InvokeEditShareRightsDlgEvent event;
-
-											// Fire an event to invoke the "edit share rights" dialog.
-											event = new InvokeEditShareRightsDlgEvent(
-																					recipientId,
-																					entityId );
-											GwtTeaming.fireEvent( event );
-										}
-									};
-									Scheduler.get().scheduleDeferred( cmd );
+											@Override
+											public void execute()
+											{
+												InvokeEditShareRightsDlgEvent event;
+	
+												// Fire an event to invoke the "edit share rights" dialog.
+												event = new InvokeEditShareRightsDlgEvent(
+																						recipientId,
+																						entityId );
+												GwtTeaming.fireEvent( event );
+											}
+										};
+										Scheduler.get().scheduleDeferred( cmd );
+									}
 								}
 							}
 							else
@@ -2370,27 +2375,32 @@ public class ShareThisDlg extends DlgBox
 				
 				if ( shareItem != null )
 				{
-					final Long recipientId;
-					final Long entityId;
-					Scheduler.ScheduledCommand cmd;
-					
-					recipientId = shareItem.getRecipientId();
-					entityId = shareItem.getEntityId().getEntityId();
-					cmd = new Scheduler.ScheduledCommand()
+					// We only want to invoke the "edit share rights" dialog if
+					// we are dealing with 1 entity
+					if ( m_entityIds != null && m_entityIds.size() == 1 )
 					{
-						@Override
-						public void execute()
+						final Long recipientId;
+						final Long entityId;
+						Scheduler.ScheduledCommand cmd;
+						
+						recipientId = shareItem.getRecipientId();
+						entityId = shareItem.getEntityId().getEntityId();
+						cmd = new Scheduler.ScheduledCommand()
 						{
-							InvokeEditShareRightsDlgEvent event;
-
-							// Fire an event to invoke the "edit share rights" dialog.
-							event = new InvokeEditShareRightsDlgEvent(
-																	recipientId,
-																	entityId );
-							GwtTeaming.fireEvent( event );
-						}
-					};
-					Scheduler.get().scheduleDeferred( cmd );
+							@Override
+							public void execute()
+							{
+								InvokeEditShareRightsDlgEvent event;
+	
+								// Fire an event to invoke the "edit share rights" dialog.
+								event = new InvokeEditShareRightsDlgEvent(
+																		recipientId,
+																		entityId );
+								GwtTeaming.fireEvent( event );
+							}
+						};
+						Scheduler.get().scheduleDeferred( cmd );
+					}
 				}
 			}
 		};
