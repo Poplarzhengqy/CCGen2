@@ -2039,14 +2039,17 @@ public abstract class AbstractZoneModule extends CommonDependencyInjection imple
 	private void addVisitorRoleToGuestWorkspace(Workspace guestWs, Long zoneId) {
 		User g = getProfileDao().getReservedUser(ObjectKeys.GUEST_USER_INTERNALID, zoneId);
 		//Let guest be a visitor to the guest workspace
-		Set<Long> members = new HashSet<Long>();
-		members.add(g.getId());
 		//Let guest be a visitor to the guest workspace
 		Function visitorsRole = getFunctionManager().findFunctionByName(zoneId, ObjectKeys.ROLE_TITLE_VISITOR);
 		WorkAreaFunctionMembership wafm = getWorkAreaFunctionMembershipManager().getWorkAreaFunctionMembership(zoneId, guestWs, visitorsRole.getId());
 		if (wafm == null) {
 			wafm = new WorkAreaFunctionMembership();
 		}
+		Set<Long> members = wafm.getMemberIds();
+		if (members == null) {
+			members = new HashSet<Long>();
+		}
+		members.add(g.getId());
 		wafm.setFunctionId(visitorsRole.getId());
 		wafm.setWorkAreaId(guestWs.getWorkAreaId());
 		wafm.setWorkAreaType(guestWs.getWorkAreaType());
