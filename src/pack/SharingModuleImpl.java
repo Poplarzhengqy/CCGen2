@@ -303,7 +303,10 @@ public class SharingModuleImpl extends CommonDependencyInjection implements Shar
 				//If this is a Filr Net Folder, check if sharing is allowed at the folder level
 				if (binder.isAclExternallyControlled() && 
 						!SPropsUtil.getBoolean("sharing.netFolders.allowed", false)) {
-					throw new AccessControlException("errorcode.sharing.netfolders.notAllowed", new Object[] {});
+					//See if this Filr folder is in the user's personal workspace. We allow sharing of the home folder
+					if (!Utils.isWorkareaInProfilesTree(binder)) {
+						throw new AccessControlException("errorcode.sharing.netfolders.notAllowed", new Object[] {});
+					}
 				}
 				//Check if the binder allows share forward
 				if (tryingToAllowShareForward) {
@@ -487,9 +490,11 @@ public class SharingModuleImpl extends CommonDependencyInjection implements Shar
 				// Yes!  Does the user have "share internal" rights on it?
 				Binder binder = ((Binder) de);
 				//If this is a Filr Net Folder, check if sharing is allowed at the folder level
-				//Also check that the folder isn't a Net Folder. Sharing Net Folders is not allowed
+				//Also check that the folder isn't a Net Folder. 
+				//Sharing Net Folders is not allowed unless it is in the user's own user workspace
 				if (!binder.isAclExternallyControlled() || 
-						SPropsUtil.getBoolean("sharing.netFolders.allowed", false)) {
+						SPropsUtil.getBoolean("sharing.netFolders.allowed", false) || 
+						Utils.isWorkareaInProfilesTree(binder)) {
 					if (accessControlManager.testOperation(zoneConfig, WorkAreaOperation.ENABLE_SHARING_INTERNAL) && 
 							binderModule.testAccess(binder, BinderOperation.allowSharing)) {
 						// Yes!
