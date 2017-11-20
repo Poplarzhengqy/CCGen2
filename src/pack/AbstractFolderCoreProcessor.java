@@ -90,6 +90,7 @@ import org.kablink.teaming.module.shared.FileUtils;
 import org.kablink.teaming.module.shared.InputDataAccessor;
 import org.kablink.teaming.module.shared.XmlUtils;
 import org.kablink.teaming.security.AccessControlException;
+import org.kablink.teaming.security.function.WorkArea;
 import org.kablink.teaming.util.CollectionUtil;
 import org.kablink.teaming.util.SpringContextUtil;
 import org.kablink.teaming.web.util.ServerTaskLinkage;
@@ -851,13 +852,37 @@ protected void deleteBinder_postDelete(Binder binder, Map ctx) {
     //no transaction
     @Override
 	public Binder copyBinder(Binder source, Binder destination, Map options) {
-    	if ((destination instanceof Folder) || (destination instanceof Workspace)) 
+    	if ((destination instanceof Folder) || (destination instanceof Workspace)) {
+        	if (!options.containsKey(ObjectKeys.INPUT_OPTION_SKIP_INVALID_FILES) ||
+        			!(Boolean)options.get(ObjectKeys.INPUT_OPTION_SKIP_INVALID_FILES)) {
+        		//We must guard against invalid copy attempts
+        		if (!source.isAclExternallyControlled() && destination.isAclExternallyControlled()) {
+        			//This type of request could have invalid entries, so check each one
+        			Set<WorkArea> workAreas = source.getChildWorkAreas();
+        			for (WorkArea w : workAreas) {
+        				if (w instanceof FolderEntry) {
+        					try {
+        						copyEntryCheckMirrored(source, (FolderEntry)w, destination);
+        					} catch(Exception e) {
+        						//This entry cannot be copied, so don't copy this binder
+        						throw new NotSupportedException("errorcode.notsupported.copyEntry.complexEntryToMirrored");
+        					}
+        				}
+        			}
+        		}
+        	}
     		return super.copyBinder(source, destination, options);
-    	else throw new NotSupportedException("errorcode.notsupported.copyBinderDestination", new String[] {destination.getPathName()});
+    	} else {
+    		throw new NotSupportedException("errorcode.notsupported.copyBinderDestination", new String[] {destination.getPathName()});
+    	}
    	 
     }
     //***********************************************************************************************************
    //no transaction
+    
+    //If the destination binder is a mirrored folder and the source binder is not a mirrored folder,
+    // then the callers to this routine should have validated that every entry is valid to copy.
+    //This routine will skip over any entry that is not valid, possibly making a partial copy
     @Override
 	public void copyEntries(final Binder source, Binder binder, final Map options) { 
 		//now copy entries
@@ -908,31 +933,43 @@ protected void deleteBinder_postDelete(Binder binder, Map ctx) {
 		       					// ...skip it.
 		       					continue;
 		       				}
-		       				FolderEntry dEntry = new FolderEntry(sEntry);
+		       				boolean okToCopy = false;
+		       				try {
+		       					//See if copying from this source binder to this destination folder is a legal operation to do
+		       					copyEntryCheckMirrored(source, sEntry, folder);
+		       					okToCopy = true;
+		       				} catch(Exception e) {}
 		       				
-		       				if (sEntry.isTop()) {
-		       					sourceMap.clear();
-		       					if (preserverDocNum) folder.addEntry(dEntry, sEntry.getHKey().getLastNumber());
-		       					else folder.addEntry(dEntry);
-		          			} else {
-		          				FolderEntry dParent = sourceMap.get(sEntry.getParentEntry());
-		          				dParent.addReply(dEntry, sEntry.getHKey().getLastNumber());
-		          			}
-		       				getCoreDao().save(dEntry); //need to generate id; do after sortkey is set
-		       				sourceMap.put(sEntry, dEntry);
-		      		    	List<Tag> entryTags = tags.get(sEntry.getEntityIdentifier());
-		       				doCopy(sEntry, dEntry, entryTags, null, options);
-
-		       				// Does the folder we're copy entries from
-		       				// contain task linkage information?
-		       				if (hasTaskLinkage) {
-		       					// Yes!  Then we need to track the IDs
-		       					// of the source entries and a mapping
-		       					// between the source and destination
-		       					// entries.
-			       				Long sId = sEntry.getId();
-			       				sIds.add(sId);
-			       				eIdsMap.put(sId, dEntry.getId());
+		       				//Inside this routine, we will skip any invalid entries.
+		       				//Callers of this routine should validate the whole binder before calling this routine
+		       				//  if it is not desirable to have an incomplete copy.
+		       				if (okToCopy) {
+			       				FolderEntry dEntry = new FolderEntry(sEntry);
+			       				
+			       				if (sEntry.isTop()) {
+			       					sourceMap.clear();
+			       					if (preserverDocNum) folder.addEntry(dEntry, sEntry.getHKey().getLastNumber());
+			       					else folder.addEntry(dEntry);
+			          			} else {
+			          				FolderEntry dParent = sourceMap.get(sEntry.getParentEntry());
+			          				dParent.addReply(dEntry, sEntry.getHKey().getLastNumber());
+			          			}
+			       				getCoreDao().save(dEntry); //need to generate id; do after sortkey is set
+			       				sourceMap.put(sEntry, dEntry);
+			      		    	List<Tag> entryTags = tags.get(sEntry.getEntityIdentifier());
+			       				doCopy(sEntry, dEntry, entryTags, null, options);
+	
+			       				// Does the folder we're copy entries from
+			       				// contain task linkage information?
+			       				if (hasTaskLinkage) {
+			       					// Yes!  Then we need to track the IDs
+			       					// of the source entries and a mapping
+			       					// between the source and destination
+			       					// entries.
+				       				Long sId = sEntry.getId();
+				       				sIds.add(sId);
+				       				eIdsMap.put(sId, dEntry.getId());
+			       				}
 		       				}
 		       			}
 		       			getCoreDao().flush();
@@ -1242,7 +1279,10 @@ protected void deleteBinder_postDelete(Binder binder, Map ctx) {
  				   List<FolderEntry>children = getFolderDao().loadEntryDescendants((FolderEntry)entry);
  				   for (FolderEntry child:children) {
  					   atts = child.getAttachments();
- 					   if (!atts.isEmpty()) break;
+ 					   if (!atts.isEmpty()) {
+ 			 			   throw new NotSupportedException("errorcode.notsupported.copyEntry.complexEntryToMirrored",
+ 			 						new String[] {binder.getPathName(), destination.getPathName()});			   
+ 					   }
  				   }
  				   //This entry is OK to copy
  				   return;

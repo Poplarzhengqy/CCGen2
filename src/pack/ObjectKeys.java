@@ -616,6 +616,7 @@ public interface ObjectKeys {
 	public static final String INPUT_OPTION_FORCE_LOCK="org.kablink.teaming.options.lock";
 	//default = Boolean.TRUE if INPUT_OPTION_COPY_NEW_BINDER=TRUE; Preserve old docnumbers when copy to a new folder;
 	public static final String INPUT_OPTION_PRESERVE_DOCNUMBER="org.kablink.teaming.options.preserve.docnum";
+	public static final String INPUT_OPTION_SKIP_INVALID_FILES="org.kablink.teaming.options.skip.invalid.files";
 	//Default=Boolean.FALSE; When deleteing a profile entry, delete the associated workspace and all source/sub binders
 	public static final String INPUT_OPTION_DELETE_USER_WORKSPACE="org.kablink.teaming.options.delete.userworkspace";
 	//Default=Boolean.TRUE; When deleting a user's personal workspace, should we delete the content of a mirrored folder.

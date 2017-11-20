@@ -2419,8 +2419,8 @@ public class FileModuleImpl extends CommonDependencyInjection implements FileMod
     	String versionName = null;
     	
 		if(fui.isSynchToRepository()) {
-			InputStream in = fui.getInputStream();
 			long size = fui.makeReentrant().getSize();
+			InputStream in = fui.getInputStream();
 			try {
 				versionName = createVersionedWithInputData(session, binder, entity,
 						fui.getOriginalFilename(), fui.isSynchToRepository(), in, size);
